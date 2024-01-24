@@ -12,7 +12,7 @@ function mdl = pls_modelvalidation(X,Y,ncomp)
     % the overall model significance.
 
     % Set number of _permutations to perform
-    n_perms = 500;
+    n_perms = 5000;
 
     % Set the number of folds for cross validation
     K = 5;
