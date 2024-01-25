@@ -54,7 +54,7 @@ function mdl = pls_modelvalidation(X,Y,ncomp)
             PRESS_perm(p,k) = sum((Y_perm(tst,:)-yhat_perm).^2,'all');
             % Calculate the total sum of squares
             TSS_perm(p,k) = sum((Y_perm(tst,:)-mean(Y_perm(tst,:))).^2,'all');
-            Q2_perm(p,k) = 1 - PRESS(p,k)/TSS(p,k);
+            Q2_perm(p,k) = 1 - PRESS_perm(p,k)/TSS_perm(p,k);
 
             
 
@@ -62,7 +62,10 @@ function mdl = pls_modelvalidation(X,Y,ncomp)
     end
     
 
-    rng = linspace(min([Q2;Q2_perm]),max([Q2;Q2_perm]),100);
+    rng = linspace(...
+        min([Q2;Q2_perm],[],'all'),...
+        max([Q2;Q2_perm],[],'all'),...
+        100);
     figure,histogram(Q2,rng);
     hold on
     histogram(Q2_perm,rng)
@@ -80,6 +83,6 @@ function mdl = pls_modelvalidation(X,Y,ncomp)
     mdl.Q2_perm = Q2_perm;
     % The model p-value is the fraction of Q^2 values from the null
     % distribution that are greater than the estimated real Q^2 value
-    mdl.pvalue = sum(Q2_perm>mean(Q2))/n_perms;
+    mdl.pvalue = sum(Q2_perm(:)>mean(Q2(:)))/n_perms;
 
 end
