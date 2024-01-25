@@ -61,11 +61,13 @@ function mdl = pls_modelvalidation(X,Y,ncomp)
         end
     end
     
-
-    rng = linspace(...
-        min([Q2;Q2_perm],[],'all'),...
-        max([Q2;Q2_perm],[],'all'),...
-        100);
+    TSS = mean(TSS,2);
+    TSS_perm = mean(TSS_perm,2);
+    PRESS = mean(PRESS,2);
+    PRESS_perm = mean(PRESS_perm,2);
+    Q2 = mean(Q2,2);
+    Q2_perm = mean(Q2_perm,2);
+    rng = linspace(min([Q2;Q2_perm]),max([Q2;Q2_perm]),100);
     figure,histogram(Q2,rng);
     hold on
     histogram(Q2_perm,rng)
