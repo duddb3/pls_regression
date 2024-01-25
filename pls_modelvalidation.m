@@ -29,9 +29,9 @@ function mdl = pls_modelvalidation(X,Y,ncomp)
         C = cvpartition(size(Y,1),'KFold',K);
     
         % shuffle Y
-        Y_perm = Y(rand_perm(size(Y,1),size(Y,1)),:);
+        Y_perm = Y(randperm(size(Y,1),size(Y,1)),:);
 
-        for k=1:C.NumTestSets   % do each fold        
+        for k=1:K   % do each fold        
             % Get the training and test sets
             trn = training(C,k);
             tst = test(C,k);

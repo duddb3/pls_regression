@@ -9,23 +9,20 @@ function ncomp = pls_optimalcomp(X,Y)
     P = 20; 
     % Choose upper bound on number of components to test. You could go up 
     % to rank(X), but that is very high
-    ncomp = 30;
+    mxncomp = 30;
     % Instantiate array that we will fill with the predictive relevance of 
     % each fold at each dimensionality
-    Q2 = NaN(P,K,ncomp);
+    Q2 = NaN(P,K,mxncomp);
+    MSE = NaN(P,K,mxncomp);
     
     
     
-    for c=1:ncomp   % for each level of dimensionality
-        txt = sprintf('Cross-validation of PLS-R model with %i components',c);
-        fprintf(txt)
-    
-        parfor p=1:P
-            % Create cross-validation partitions for K-folds
-            n_subjects = size(Y,1);
-            C = cvpartition(n_subjects, 'KFold', K);    
+    parfor p=1:P
+        % Create cross-validation partitions for K-folds
+        n_subjects = size(Y,1);
+        C = cvpartition(n_subjects, 'KFold', K);
+        for c=1:mxncomp   % for each level of dimensionality
             for k=1:K   % for each fold
-                
                 % Get train and test set indices for fold k
                 traini = training(C,k);
                 testi = test(C,k);
@@ -39,20 +36,30 @@ function ncomp = pls_optimalcomp(X,Y)
                 % Calculate the total sum of squares
                 TSS = sum((Y(testi,:)-mean(Y(testi,:))).^2,'all');
                 Q2(p,k,c) = 1 - PRESS/TSS;
+
+                % Calculate the mean squared error
+                MSE(p,k,c) = mean((Y(testi,:)-yhat).^2,'all');
         
             end
         end
-    
-        fprintf(repmat('\b',1,length(txt)));
     end
 
-    Q2 = reshape(Q2,[],c);
+    Q2 = reshape(Q2,[],mxncomp);
     Q2k = squeeze(mean(Q2));
+    MSE = reshape(MSE,[],mxncomp);
+    MSEk = squeeze(mean(MSE));
     [~,ncomp] = min(Q2k);
+    [~,ncomp] = min(MSEk);
 
     figure,
     errorbar(Q2k,std(Q2)./sqrt(size(Q2,1)),'--ok')
     ylabel('Observed Predictive Relevance (Q^2)')
     xlabel('Number of components')
+
+    figure,
+    errorbar(MSEk,std(MSE)./sqrt(size(MSE,1)),'--ok')
+    ylabel('Mean Squared Error')
+    xlabel('Number of components')
+    
 
 end
