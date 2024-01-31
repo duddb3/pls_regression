@@ -9,7 +9,7 @@ function ncomp = pls_optimalcomp(X,Y)
     P = 20; 
     % Choose upper bound on number of components to test. You could go up 
     % to rank(X), but that is very high
-    mxncomp = 30;
+    mxncomp = max(30,rank(X));
     % Instantiate array that we will fill with the predictive relevance of 
     % each fold at each dimensionality
     Q2 = NaN(P,K,mxncomp);
