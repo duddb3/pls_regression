@@ -20,6 +20,8 @@ The PLS regression analysis will tell you A) the predictive value of your matrix
 5. **Obtain coefficients and statistics**
    >[coeff,zstats,pvals] = pls_modelweights(X,Y,ncomp);
 
+   This function performs bootstrapping of the PLS regression to obtain estimates for the regression coefficients and their respective z-statistics and p-values. Each of the outputs will be a p-by-m matrix where p is the number of predictor variables and m is the number of response variables.
+
 
 # Notes for using with neuroimaging data loaded by Canlab:
 Say you created an fmri object data structure using the Canlab tools like so:  
