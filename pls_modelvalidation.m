@@ -22,14 +22,18 @@ function mdl = pls_modelvalidation(X,Y,ncomp)
     TSS_perm = TSS;
     PRESS = TSS;
     PRESS_perm = TSS;
-    Q2 = TSS;
-    Q2_perm = TSS;
-
+    CoD = TSS;
+    CoD_perm = TSS;
+    CorrCoef = NaN(n_perms,size(Y,2));
+    CorrCoef_perm = CorrCoef;
     parfor p=1:n_perms
         C = cvpartition(size(Y,1),'KFold',K);
     
         % shuffle Y
         Y_perm = Y(randperm(size(Y,1),size(Y,1)),:);
+
+        allyhat = zeros(size(Y));
+        allyhat_perm = allyhat;
 
         for k=1:K   % do each fold        
             % Get the training and test sets
@@ -40,51 +44,58 @@ function mdl = pls_modelvalidation(X,Y,ncomp)
             [~,~,~,~,BETA] = plsregress(X(trn,:),Y(trn,:),ncomp);
             % Fill in the predicted estimates for the kth test data
             yhat = [ones(sum(tst),1) X(tst,:)]*BETA;
+            allyhat(tst,:) = yhat;
             % Calculate the Predicted REsidual Sum of Squares
             PRESS(p,k) = sum((Y(tst,:)-yhat).^2,'all');
             % Calculate the total sum of squares
             TSS(p,k) = sum((Y(tst,:)-mean(Y(tst,:))).^2,'all');
-            Q2(p,k) = 1 - PRESS(p,k)/TSS(p,k);
+            CoD(p,k) = 1 - PRESS(p,k)/TSS(p,k);
 
             % Train the model with the kth partition data for shuffled Y
             [~,~,~,~,BETA] = plsregress(X(trn,:),Y_perm(trn,:),ncomp);
             % Fill in the predicted estimates for the kth test data
             yhat_perm = [ones(sum(tst),1) X(tst,:)]*BETA;
+            allyhat_perm(tst,:) = yhat_perm;
             % Calculate the Predicted REsidual Sum of Squares
             PRESS_perm(p,k) = sum((Y_perm(tst,:)-yhat_perm).^2,'all');
             % Calculate the total sum of squares
             TSS_perm(p,k) = sum((Y_perm(tst,:)-mean(Y_perm(tst,:))).^2,'all');
-            Q2_perm(p,k) = 1 - PRESS_perm(p,k)/TSS_perm(p,k);
+            CoD_perm(p,k) = 1 - PRESS_perm(p,k)/TSS_perm(p,k);
 
             
 
         end
+        CorrCoef(p,:) = diag(corr(Y,allyhat));
+        CorrCoef_perm(p,:) = diag(corr(Y_perm,allyhat_perm));
     end
-    
     TSS = mean(TSS,2);
     TSS_perm = mean(TSS_perm,2);
     PRESS = mean(PRESS,2);
     PRESS_perm = mean(PRESS_perm,2);
-    Q2 = mean(Q2,2);
-    Q2_perm = mean(Q2_perm,2);
-    rng = linspace(min([Q2;Q2_perm]),max([Q2;Q2_perm]),100);
-    figure,histogram(Q2,rng);
+    CoD = mean(CoD,2);
+    CoD_perm = mean(CoD_perm,2);
+    rng = linspace(min([CoD;CoD_perm]),max([CoD;CoD_perm]),100);
+    figure,histogram(CoD,rng);
     hold on
-    histogram(Q2_perm,rng)
-    
+    histogram(CoD_perm,rng)
     hold off
     set(gcf,'Color','w')
     legend({'Model','Null Model'})
-    xlabel('Predictive R^2')
+    xlabel('Model Coefficient of Determination')
 
-    mdl.TSS = TSS;
-    mdl.TSS_perm = TSS_perm;
-    mdl.PRESS = PRESS;
-    mdl.PRESS_perm = PRESS_perm;
-    mdl.Q2 = Q2;
-    mdl.Q2_perm = Q2_perm;
-    % The model p-value is the fraction of Q^2 values from the null
-    % distribution that are greater than the estimated real Q^2 value
-    mdl.pvalue = sum(Q2_perm(:)>mean(Q2(:)))/n_perms;
+    % Model coefficient of determination (1 value for whole model)
+    mdl.CoD = CoD;
+    mdl.CoD_perm = CoD_perm;
+    % The model p-value is the fraction of CoD values from the null
+    % distribution that are greater than the estimated real CoD value
+    mdl.pvalue = (1 + sum(CoD_perm(:)>mean(CoD(:))))/(n_perms +1);
+
+    % Model r and r-squared (1 value for each response variable)
+    mdl.r = mean(CorrCoef);
+    mdl.r_perm = CorrCoef_perm;
+    mdl.rsquared = mdl.r.^2;
+    
+    % Now run the full model for weights and prediction
+    [~,~,~,~,mdl.FullModelWeights] = plsregress(X,Y,ncomp);
 
 end

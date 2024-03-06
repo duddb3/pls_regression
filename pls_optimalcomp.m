@@ -45,9 +45,9 @@ function ncomp = pls_optimalcomp(X,Y)
     end
 
     Q2 = reshape(Q2,[],mxncomp);
-    Q2k = squeeze(mean(Q2));
+    Q2k = squeeze(mean(Q2,'omitnan'));
     MSE = reshape(MSE,[],mxncomp);
-    MSEk = squeeze(mean(MSE));
+    MSEk = squeeze(mean(MSE,'omitnan'));
     [~,ncomp] = min(Q2k);
     [~,ncomp] = min(MSEk);
 
