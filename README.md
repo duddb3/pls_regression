@@ -8,14 +8,14 @@ The PLS regression analysis will tell you A) the predictive value of your matrix
 1. **Find the optimal number of components**
    >ncomp = pls_optimalcomp(X,Y);  
    
-   This function finds the optimal hyperparameter for the model: the number of components to retain. It performs 5-fold cross validation of the PLS model for each case of components from 1 to 30*; for each case, the average mean squared error and predictive **R<sup>2</sup>** is calculated from the predicted responses from the testing set. The optimal number of components is the case that minimizes mean squared error or maximizes predictive **R<sup>2</sup>**. Plots of these model performance metrics vs. the number of components are displayed (for fun). Note: in order to obtain more robust estimates of the model performance metrics, the process is repeated with 20 different holdout sets for cross validation.
+   This function finds the optimal hyperparameter for the model: the number of components to retain. It performs 5-fold cross validation of the PLS model for each case of components from 1 to 30*; for each case, the average mean squared error and Coefficient of Determination is calculated from the predicted responses from the testing set. The optimal number of components is the case that minimizes mean squared error. Plots of these model performance metrics vs. the number of components are displayed (for fun). Note: in order to obtain more robust estimates of the model performance metrics, the process is repeated with 20 different holdout sets for cross validation.
 
    *Theoretically, you can have up to rank(X) number of components. However, because PLS components are derived by taking into account the response variable(s), the optimal number of components is typically fairly low.   
    
 3. **Perform model validation**
    >mdl = pls_modelvalidation(X,Y,ncomp);
    
-   This function performs model validation via permutation. Specifically, for each permutation a new cross-validation partition set is defined and a random permutation of the response variable(s) is generated. Then for each fold, a partial least squares regression model is fit to the training set; the resulting model coefficients are used to generate the predicted response variables yhat (for the regular data) and yhat_perm (for the permuted data). The mean squared error, Predicted REsidual Sum of Squares, Total Sum of Squares, and predictive **R<sup>2</sup>** are then calculated for each permutation. The resulting distributions are compared to yield the overall model significance.
+   This function performs model validation via permutation. Specifically, for each permutation a new cross-validation partition set is defined and a random permutation of the response variable(s) is generated. Then for each fold, a partial least squares regression model is fit to the training set; the resulting model coefficients are used to generate the predicted response variables yhat (for the regular data) and yhat_perm (for the permuted data). The mean squared error, Predicted REsidual Sum of Squares, Total Sum of Squares, and Coefficient of Determination are then calculated for each permutation. The resulting distributions are compared to yield the overall model significance.
    
 5. **Obtain coefficients and statistics**
    >[coeff,zstats,pvals] = pls_modelweights(X,Y,ncomp);
@@ -25,10 +25,13 @@ The PLS regression analysis will tell you A) the predictive value of your matrix
 
 # Notes for using with neuroimaging data loaded by Canlab:
 Say you created an fmri object data structure using the Canlab tools like so:  
+>addpath(genpath('/path/to/CanlabCore'))  
 >fmri_obj = fmri_data(filelist,mask);  
->fmri_obj.Y = your_response_variable;
+>fmri_obj.Y = your_response_variable;  
+>restoredefaultpath
 
 Then you can use the following commands to run the pls regression analysis:  
+>addpath('/path/to/pls_regression')  
 >X = fmri_obj.dat';  
 >Y = fmri_obj.Y;  
 >ncomp = pls_optimalcomp(X,Y);  
@@ -36,6 +39,7 @@ Then you can use the following commands to run the pls regression analysis:
 >[coeff,zstats,pvals] = pls_modelweights(X,Y,ncomp);  
 
 Then you can use the following commands to put your coefficients and p-values into an object to use Canlabs visualization tools:
+>addpath(genpath('/path/to/CanlabCore'))  
 >stat_obj = statistic_image;  
 >stat_obj = fmri_obj.volInfo;  
 >stat_obj.dat = coeff';  

@@ -12,7 +12,7 @@ function ncomp = pls_optimalcomp(X,Y)
     mxncomp = min(30,rank(X));
     % Instantiate array that we will fill with the predictive relevance of 
     % each fold at each dimensionality
-    Q2 = NaN(P,K,mxncomp);
+    CoD = NaN(P,K,mxncomp);
     MSE = NaN(P,K,mxncomp);
     
     
@@ -35,7 +35,7 @@ function ncomp = pls_optimalcomp(X,Y)
                 PRESS = sum((Y(testi,:)-yhat).^2,'all');
                 % Calculate the total sum of squares
                 TSS = sum((Y(testi,:)-mean(Y(testi,:))).^2,'all');
-                Q2(p,k,c) = 1 - PRESS/TSS;
+                CoD(p,k,c) = 1 - PRESS/TSS;
 
                 % Calculate the mean squared error
                 MSE(p,k,c) = mean((Y(testi,:)-yhat).^2,'all');
@@ -44,20 +44,24 @@ function ncomp = pls_optimalcomp(X,Y)
         end
     end
 
-    Q2 = reshape(Q2,[],mxncomp);
-    Q2k = squeeze(mean(Q2,'omitnan'));
+    CoD = reshape(CoD,[],mxncomp);
+    CoDk = squeeze(mean(CoD,'omitnan'));
     MSE = reshape(MSE,[],mxncomp);
     MSEk = squeeze(mean(MSE,'omitnan'));
-    [~,ncomp] = min(Q2k);
     [~,ncomp] = min(MSEk);
 
     figure,
-    errorbar(Q2k,std(Q2)./sqrt(size(Q2,1)),'--ok')
-    ylabel('Observed Predictive Relevance (Q^2)')
+    tiledlayout(2,1)
+    nexttile(1)
+    errorbar(CoDk,std(CoD)./sqrt(size(CoD,1)),'--ok')
+    ylabel('Model Coefficient of Determination')
     xlabel('Number of components')
 
-    figure,
+    nexttile(2)
     errorbar(MSEk,std(MSE)./sqrt(size(MSE,1)),'--ok')
+    hold on
+    plot(ncomp,MSEk(ncomp),'og','MarkerFaceColor','g')
+    hold off
     ylabel('Mean Squared Error')
     xlabel('Number of components')
     
