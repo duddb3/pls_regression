@@ -1,7 +1,14 @@
-function ncomp = pls_optimalcomp(X,Y)
+function ncomp = pls_optimalcomp(X,Y,stratcol)
     % This function finds the optimal number of components to perform
     % partial least squares regression for predictor variabls X and
     % response variables Y.
+
+    if exist("stratcol","var")
+        % Create partition for stratified K-fold cross-validation
+        grp = categorical(Y(:,stratcol));
+    else
+        grp = size(Y,1);
+    end
 
     % Number of folds for cross-validation
     K = 5; 
@@ -9,7 +16,9 @@ function ncomp = pls_optimalcomp(X,Y)
     P = 20; 
     % Choose upper bound on number of components to test. You could go up 
     % to rank(X), but that is very high
-    mxncomp = min(30,rank(X));
+    C = cvpartition(grp,'KFold',K);
+    traini = 1:min(C.TrainSize);
+    mxncomp = min(30,rank(X(traini,:))-1);
     % Instantiate array that we will fill with the predictive relevance of 
     % each fold at each dimensionality
     CoD = NaN(P,K,mxncomp);
@@ -19,8 +28,7 @@ function ncomp = pls_optimalcomp(X,Y)
     
     parfor p=1:P
         % Create cross-validation partitions for K-folds
-        n_subjects = size(Y,1);
-        C = cvpartition(n_subjects, 'KFold', K);
+        C = cvpartition(grp,'KFold',K);
         for c=1:mxncomp   % for each level of dimensionality
             for k=1:K   % for each fold
                 % Get train and test set indices for fold k
@@ -38,7 +46,8 @@ function ncomp = pls_optimalcomp(X,Y)
                 CoD(p,k,c) = 1 - PRESS/TSS;
 
                 % Calculate the mean squared error
-                MSE(p,k,c) = mean((Y(testi,:)-yhat).^2,'all');
+%                 MSE(p,k,c) = mean((Y(testi,:)-yhat).^2,'all');
+                MSE(p,k,c) = sum(mean((Y(testi,:)-yhat).^2));
         
             end
         end
