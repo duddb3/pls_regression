@@ -64,6 +64,7 @@ function mdl = pls_modelvalidation(X,Y,ncomp,stratcol)
             PRESS(p,k) = sum((Y(tst,:)-yhat).^2,'all');
             % Calculate the total sum of squares
             TSS(p,k) = sum((Y(tst,:)-mean(Y(tst,:))).^2,'all');
+            % Calculate the Coefficient of Determination
             CoD(p,k) = 1 - PRESS(p,k)/TSS(p,k);
 
             % Train the model with the kth partition data for shuffled Y
@@ -75,6 +76,7 @@ function mdl = pls_modelvalidation(X,Y,ncomp,stratcol)
             PRESS_perm(p,k) = sum((Y_perm(tst,:)-yhat_perm).^2,'all');
             % Calculate the total sum of squares
             TSS_perm(p,k) = sum((Y_perm(tst,:)-mean(Y_perm(tst,:))).^2,'all');
+            % Calculate the Coefficient of Determination
             CoD_perm(p,k) = 1 - PRESS_perm(p,k)/TSS_perm(p,k);
 
             
@@ -133,7 +135,30 @@ function mdl = pls_modelvalidation(X,Y,ncomp,stratcol)
     mdl.CV.MAE_perm = MAE_perm;
     
     % Now run the full model for weights and prediction
-    [~,~,~,~,mdl.FullModel.Weights] = plsregress(X,Y,ncomp);
+    [mdl.FullModel.xl,mdl.FullModel.yl,...    
+        mdl.FullModel.xs,mdl.FullModel.ys,...
+        mdl.FullModel.Weights,mdl.FullModel.pctvar] = plsregress(X,Y,ncomp);
     mdl.FullModel.Prediction = [ones(size(X,1),1) X]*mdl.FullModel.Weights;
+
+    % Now run model permutations to test significance for loadings amd
+    % weights
+    yl_perm = nan([size(mdl.FullModel.yl) n_perms]);
+    xl_perm = nan([size(mdl.FullModel.xl) n_perms]);
+    beta_perm = nan([size(mdl.FullModel.Weights) n_perms]);
+    pctvarp = nan([size(mdl.FullModel.pctvar) n_perms]);
+    parfor p=1:n_perms
+        Yperm = Y(randperm(size(Y,1),size(Y,1)),:);
+        [xl_perm(:,:,p),yl_perm(:,:,p),~,~,beta_perm(:,:,p),pctvarp(:,:,p)] = plsregress(X,Yperm,ncomp);
+    end
+    mdl.FullModel.PctVar_pvalue = (sum(pctvarp>mdl.FullModel.pctvar,3)+1)/(n_perms+1);
+    mdl.FullModel.yl_pvalue = (sum(abs(yl_perm)>abs(mdl.FullModel.yl),3)+1)/(n_perms+1);
+    mdl.FullModel.yl_qvalue = reshape(mafdr(mdl.FullModel.yl_pvalue(:),'BHFDR',true),size(mdl.FullModel.yl_pvalue));
+    mdl.FullModel.xl_pvalue = (sum(abs(xl_perm)>abs(mdl.FullModel.xl),3)+1)/(n_perms+1);
+    for n=1:ncomp
+        mdl.FullModel.xl_qvalue(:,n) = mafdr(mdl.FullModel.xl_pvalue(:,n),'BHFDR',true);
+    end
+    mdl.FullModel.Weights_pvalue = (1 + sum(abs(beta_perm)>abs(mdl.FullModel.Weights),3))/(n_perms+1);
+
+
 
 end
